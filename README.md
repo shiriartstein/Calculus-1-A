@@ -1,6 +1,6 @@
 # Calculus 1a notes
 
-Public Hebrew notes edited mainly by Shiri Artstein and Yaron Ostrover, Tel Aviv University.
+Public Hebrew notes edited based on previous notes by Shiri Artstein and Yaron Ostrover, Tel Aviv University.
 
 Only Chapter 1 is included. Chapters 2–7 display “המשך יבוא”. The original 180-page PDF is deliberately absent.
 
