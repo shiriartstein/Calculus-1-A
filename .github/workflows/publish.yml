@@ -1,131 +1,34 @@
 name: Update and publish notes
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: false
-
 jobs:
   publish:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
-
+          python-version: '3.12'
       - name: Install PDF tools
         run: python -m pip install pymupdf pillow
-
       - name: Generate website pages
-        shell: python
-        run: |
-          import json
-          import re
-          import shutil
-          from pathlib import Path
-          import pymupdf
-          from PIL import Image
-
-          site = Path("_site")
-          site.mkdir(exist_ok=True)
-          for name in ("index.html", "style.css", "app.js"):
-              shutil.copy2(name, site / name)
-          shutil.copytree("assets", site / "assets", dirs_exist_ok=True)
-
-          pdf = pymupdf.open("assets/chapter-1.pdf")
-          if not len(pdf):
-              raise RuntimeError("The PDF contains no pages.")
-
-          pages = site / "assets/pages"
-          pages.mkdir(parents=True, exist_ok=True)
-          for old in pages.glob("page-*.webp"):
-              old.unlink()
-
-          for i, page in enumerate(pdf, 1):
-              pix = page.get_pixmap(
-                  matrix=pymupdf.Matrix(1.9, 1.9), alpha=False
-              )
-              image = Image.frombytes(
-                  "RGB", (pix.width, pix.height), pix.samples
-              )
-              image.save(
-                  pages / f"page-{i:02d}.webp",
-                  "WEBP", quality=86, method=6
-              )
-
-          sections = []
-          section_number = 0
-          subsection_number = 0
-          for level, title, page in pdf.get_toc():
-              if level == 1 and sections:
-                  break
-              if not 1 <= page <= len(pdf):
-                  continue
-              if level == 2:
-                  section_number += 1
-                  subsection_number = 0
-                  number = f"1.{section_number}"
-              elif level == 3 and section_number:
-                  subsection_number += 1
-                  number = f"1.{section_number}.{subsection_number}"
-              else:
-                  continue
-              sections.append({
-                  "level": level,
-                  "title": title.strip(),
-                  "page": page,
-                  "number": number
-              })
-
-          data = json.dumps(sections, ensure_ascii=False)
-          (site / "assets/contents.json").write_text(
-              data, encoding="utf-8"
-          )
-
-          path = site / "app.js"
-          app = path.read_text(encoding="utf-8")
-          app, replacements = re.subn(
-              r"const sections = .*?;\s*(?=const chapters)",
-              lambda match: "const sections = " + data + ";\n",
-              app, count=1, flags=re.S
-          )
-          if replacements != 1:
-              raise RuntimeError("Cannot locate the section list in app.js.")
-
-          app, replacements = re.subn(
-              r"i <= \d+", f"i <= {len(pdf)}", app, count=1
-          )
-          if replacements != 1:
-              raise RuntimeError("Cannot locate the page count in app.js.")
-
-          app = re.sub(
-              r"פרק 1 · \d+ עמודים",
-              f"פרק 1 · {len(pdf)} עמודים",
-              app, count=1
-          )
-          path.write_text(app, encoding="utf-8")
-
+        run: python build_notes.py
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
-
       - name: Publish website
         id: deployment
         uses: actions/deploy-pages@v4
