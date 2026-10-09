@@ -72,6 +72,8 @@ jobs:
           section_number = 0
           subsection_number = 0
           for level, title, page in pdf.get_toc():
+              if level == 1 and sections:
+                  break
               if not 1 <= page <= len(pdf):
                   continue
               if level == 2:
