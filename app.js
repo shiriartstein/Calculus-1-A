@@ -35,7 +35,7 @@ if(data) {
   actions.append(open, download);heading.append(actions);
   const contents = el('details', 'contents');contents.open = true;contents.append(el('summary', '', 'תוכן הפרק'));
   const links = el('nav', 'section-list');links.setAttribute('aria-label', `סעיפי פרק ${chapter}`);contents.append(links);if(data.sections.length) section.append(contents);
-  data.sections.forEach(item => {
+  data.sections.filter(item => item.level <= 3).forEach(item => {
     const a = el('a', item.level > 2 ? 'subsection' : '');a.href = `#page-${item.page}`;
     a.append(el('span', 'section-number', item.number), el('span', '', item.title));links.append(a);
   });
